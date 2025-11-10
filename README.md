@@ -1,3 +1,5 @@
+[![Runpod](https://api.runpod.io/badge/samirmirani/flux-schnell-runpod)](https://console.runpod.io/hub/samirmirani/flux-schnell-runpod)
+
 # Flux Schnell Runpod Worker
 
 Serverless worker that exposes [black-forest-labs/FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell) behind the same JSON contract that Runpod uses for its Public Endpoint. It is ready to publish on the Runpod Hub (`.runpod/hub.json` + `.runpod/tests.json`) and ships with a Dockerfile that targets CUDA 12.1 GPUs.
