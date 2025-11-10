@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "smoke_512",
+      "input": {
+        "prompt": "Studio lighting photo of a small bonsai tree on a desk",
+        "width": 512,
+        "height": 512,
+        "num_inference_steps": 4,
+        "guidance": 1.0,
+        "image_format": "png"
+      },
+      "timeout": 300000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "allowedCudaVersions": [
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1",
+      "12.0"
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.python-version
+.venv/
+**/.venv/
+venv/
+env/
+site-packages/
+
+# Node / frontend
+node_modules/
+*.tsbuildinfo
+.next/
+.nuxt/
+dist/
+build/
+coverage/
+.eslintcache
+.sass-cache/
+.parcel-cache/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.hypothesis/
+.dmypy.json
+ipynb_checkpoints/
+
+# Environment & secrets
+/.env
+.env.*
+*.env
+.envrc
+*.key
+*.pem
+
+# Logs & temp files
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.orig
+
+# Runpod / Hugging Face caches
+/runpod-cache/
+flux-schnell-hub/.cache/
+flux-schnell-hub/.huggingface/
+
+# IDE / editor settings
+.vscode/
+.idea/
+*.iml
+.project
+.settings/
+
+# Archives
+*.tar
+*.gz
+*.zip
+*.7z
+*.rar

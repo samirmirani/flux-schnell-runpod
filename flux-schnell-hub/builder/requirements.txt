@@ -1,0 +1,10 @@
+accelerate>=0.34.2
+diffusers>=0.31.0
+huggingface-hub>=0.25.2
+numpy>=2.1.1
+pillow>=10.4.0
+protobuf>=5.28.2
+runpod>=1.7.9
+safetensors>=0.4.4
+sentencepiece>=0.2.0
+transformers>=4.45.2

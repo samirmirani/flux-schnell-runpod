@@ -1,0 +1,138 @@
+{
+  "title": "Flux Schnell Serverless Worker",
+  "description": "Serverless Runpod worker for black-forest-labs/FLUX.1-schnell with a drop-in Public Endpoint contract.",
+  "type": "serverless",
+  "category": "image",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 40,
+    "gpuCount": 1,
+    "gpuIds": "RTX 6000 Ada,RTX A6000,NVIDIA GeForce RTX 4090",
+    "allowedCudaVersions": [
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1",
+      "12.0"
+    ],
+    "env": [
+      {
+        "key": "HF_TOKEN",
+        "input": {
+          "name": "Hugging Face access token",
+          "type": "string",
+          "description": "Personal access token with approval to download black-forest-labs/FLUX.1-schnell.",
+          "required": true
+        }
+      },
+      {
+        "key": "MODEL_ID",
+        "input": {
+          "name": "Model repository",
+          "type": "string",
+          "description": "Hugging Face repo id to load (defaults to the official FLUX.1-schnell weights).",
+          "default": "black-forest-labs/FLUX.1-schnell"
+        }
+      },
+      {
+        "key": "DEFAULT_WIDTH",
+        "input": {
+          "name": "Default width",
+          "type": "number",
+          "description": "Fallback width (must be divisible by 64).",
+          "default": 1024
+        }
+      },
+      {
+        "key": "DEFAULT_HEIGHT",
+        "input": {
+          "name": "Default height",
+          "type": "number",
+          "description": "Fallback height (must be divisible by 64).",
+          "default": 1024
+        }
+      },
+      {
+        "key": "DEFAULT_INFERENCE_STEPS",
+        "input": {
+          "name": "Default inference steps",
+          "type": "number",
+          "description": "Steps to use when the request omits num_inference_steps.",
+          "default": 4
+        }
+      },
+      {
+        "key": "DEFAULT_GUIDANCE",
+        "input": {
+          "name": "Default guidance",
+          "type": "number",
+          "description": "Guidance scale fallback.",
+          "default": 1.0
+        }
+      },
+      {
+        "key": "DEFAULT_IMAGE_FORMAT",
+        "input": {
+          "name": "Default image format",
+          "type": "string",
+          "description": "Output container when the request does not include image_format.",
+          "options": [
+            { "label": "JPEG", "value": "jpeg" },
+            { "label": "PNG", "value": "png" }
+          ],
+          "default": "jpeg"
+        }
+      },
+      {
+        "key": "PRICE_PER_MEGAPIXEL",
+        "input": {
+          "name": "Reported price per megapixel",
+          "type": "number",
+          "description": "Used only for the cost field in the handler response.",
+          "default": 0.0024,
+          "advanced": true
+        }
+      },
+      {
+        "key": "MAX_INFERENCE_STEPS",
+        "input": {
+          "name": "Maximum inference steps",
+          "type": "number",
+          "description": "Upper bound for num_inference_steps (defaults to 8).",
+          "default": 8,
+          "advanced": true
+        }
+      },
+      {
+        "key": "MAX_RESOLUTION",
+        "input": {
+          "name": "Maximum resolution edge",
+          "type": "number",
+          "description": "Clamp for width/height (defaults to 1536).",
+          "default": 1536,
+          "advanced": true
+        }
+      }
+    ],
+    "presets": [
+      {
+        "name": "Fast 768px",
+        "defaults": {
+          "DEFAULT_WIDTH": 768,
+          "DEFAULT_HEIGHT": 768,
+          "DEFAULT_INFERENCE_STEPS": 4,
+          "DEFAULT_GUIDANCE": 1.0
+        }
+      },
+      {
+        "name": "Quality 1024px",
+        "defaults": {
+          "DEFAULT_WIDTH": 1024,
+          "DEFAULT_HEIGHT": 1024,
+          "DEFAULT_INFERENCE_STEPS": 6,
+          "DEFAULT_GUIDANCE": 1.25
+        }
+      }
+    ]
+  }
+}

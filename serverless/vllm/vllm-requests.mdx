@@ -1,0 +1,277 @@
+---
+title: "Send requests to vLLM workers"
+sidebarTitle: "Send vLLM requests"
+description: "Use Runpod's native API to send requests to vLLM workers."
+---
+
+vLLM workers use the same request operations as any other Runpod Serverless endpoint, with specialized input parameters for LLM inference.
+
+## How vLLM requests work
+
+vLLM workers are queue-based Serverless endpoints. They use the same `/run` and `/runsync` operations as other Runpod endpoints, following the standard [Serverless request structure](/serverless/endpoints/send-requests).
+
+The key difference is the input format. vLLM workers expect specific parameters for language model inference, such as prompts, messages, and sampling parameters. The worker's handler processes these inputs using the vLLM engine and returns generated text.
+
+## Request operations
+
+vLLM endpoints support both synchronous and asynchronous requests.
+
+### Asynchronous requests with `/run`
+
+Use `/run` to submit a job that processes in the background. You'll receive a job ID immediately, then poll for results using the `/status` endpoint.
+
+```python
+
+import requests
+
+# Replace ENDPOINT_ID and RUNPOD_API_KEY with your actual values
+url = "https://api.runpod.ai/v2/ENDPOINT_ID/run"
+headers = {
+    "Authorization": "Bearer RUNPOD_API_KEY",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "input": {
+        "prompt": "Explain quantum computing in simple terms.",
+        "sampling_params": {
+            "temperature": 0.7,
+            "max_tokens": 200
+        }
+    }
+}
+
+response = requests.post(url, headers=headers, json=data)
+job_id = response.json()["id"]
+print(f"Job ID: {job_id}")
+```
+
+### Synchronous requests with `/runsync`
+
+Use `/runsync` to wait for the complete response in a single request. The client blocks until processing is complete.
+
+```python
+import requests
+
+# Replace ENDPOINT_ID and RUNPOD_API_KEY with your actual values
+url = "https://api.runpod.ai/v2/ENDPOINT_ID/runsync"
+headers = {
+    "Authorization": "Bearer RUNPOD_API_KEY",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "input": {
+        "prompt": "Explain quantum computing in simple terms.",
+        "sampling_params": {
+            "temperature": 0.7,
+            "max_tokens": 200
+        }
+    }
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
+```
+
+For more details on request operations, see [Send API requests to Serverless endpoints](/serverless/endpoints/send-requests).
+
+## Input formats
+
+vLLM workers accept two input formats for text generation.
+
+### Messages format (for chat models)
+
+Use the messages format for instruction-tuned models that expect conversation history. The worker automatically applies the model's chat template.
+
+```json
+{
+  "input": {
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "What is the capital of France?"}
+    ],
+    "sampling_params": {
+      "temperature": 0.7,
+      "max_tokens": 100
+    }
+  }
+}
+```
+
+### Prompt format (for text completion)
+
+Use the prompt format for base models or when you want to provide raw text without a chat template.
+
+```json
+{
+  "input": {
+    "prompt": "The capital of France is",
+    "sampling_params": {
+      "temperature": 0.7,
+      "max_tokens": 50
+    }
+  }
+}
+```
+
+### Applying chat templates to prompts
+
+If you use the prompt format but want the model's chat template applied, set `apply_chat_template` to `true`.
+
+```json
+{
+  "input": {
+    "prompt": "What is the capital of France?",
+    "apply_chat_template": true,
+    "sampling_params": {
+      "temperature": 0.7,
+      "max_tokens": 100
+    }
+  }
+}
+```
+
+## Request input parameters
+
+Here are all available parameters you can include in the `input` object of your request.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `prompt` | `string` | None | Prompt string to generate text based on. |
+| `messages` | `list[dict[str, str]]` | None | List of messages with `role` and `content` keys. The model's chat template will be applied automatically. Overrides `prompt`. |
+| `apply_chat_template` | `bool` | `false` | Whether to apply the model's chat template to the `prompt`. |
+| `sampling_params` | `dict` | `{}` | Sampling parameters to control generation (see Sampling parameters section below). |
+| `stream` | `bool` | `false` | Whether to enable streaming of output. If `true`, responses are streamed as they are generated. |
+| `max_batch_size` | `int` | env `DEFAULT_BATCH_SIZE` | The maximum number of tokens to stream per HTTP POST call. |
+| `min_batch_size` | `int` | env `DEFAULT_MIN_BATCH_SIZE` | The minimum number of tokens to stream per HTTP POST call. |
+| `batch_size_growth_factor` | `int` | env `DEFAULT_BATCH_SIZE_GROWTH_FACTOR` | The growth factor by which `min_batch_size` multiplies for each call until `max_batch_size` is reached. |
+
+## Sampling parameters
+
+Sampling parameters control how the model generates text. Include them in the `sampling_params` dictionary in your request.
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `n` | `int` | `1` | Number of output sequences generated from the prompt. The top `n` sequences are returned. |
+| `best_of` | `int` | `n` | Number of output sequences generated from the prompt. The top `n` sequences are returned from these `best_of` sequences. Must be ≥ `n`. Treated as beam width in beam search. |
+| `presence_penalty` | `float` | `0.0` | Penalizes new tokens based on their presence in the generated text so far. Values > 0 encourage new tokens, values < 0 encourage repetition. |
+| `frequency_penalty` | `float` | `0.0` | Penalizes new tokens based on their frequency in the generated text so far. Values > 0 encourage new tokens, values < 0 encourage repetition. |
+| `repetition_penalty` | `float` | `1.0` | Penalizes new tokens based on their appearance in the prompt and generated text. Values > 1 encourage new tokens, values < 1 encourage repetition. |
+| `temperature` | `float` | `1.0` | Controls the randomness of sampling. Lower values make it more deterministic, higher values make it more random. Zero means greedy sampling. |
+| `top_p` | `float` | `1.0` | Controls the cumulative probability of top tokens to consider. Must be in (0, 1]. Set to 1 to consider all tokens. |
+| `top_k` | `int` | `-1` | Controls the number of top tokens to consider. Set to -1 to consider all tokens. |
+| `min_p` | `float` | `0.0` | Represents the minimum probability for a token to be considered, relative to the most likely token. Must be in [0, 1]. Set to 0 to disable. |
+| `use_beam_search` | `bool` | `false` | Whether to use beam search instead of sampling. |
+| `length_penalty` | `float` | `1.0` | Penalizes sequences based on their length. Used in beam search. |
+| `early_stopping` | `bool` or `string` | `false` | Controls stopping condition in beam search. Can be `true`, `false`, or `"never"`. |
+| `stop` | `string` or `list[str]` | `None` | String(s) that stop generation when produced. The output will not contain these strings. |
+| `stop_token_ids` | `list[int]` | `None` | List of token IDs that stop generation when produced. Output contains these tokens unless they are special tokens. |
+| `ignore_eos` | `bool` | `false` | Whether to ignore the End-Of-Sequence token and continue generating tokens after its generation. |
+| `max_tokens` | `int` | `16` | Maximum number of tokens to generate per output sequence. |
+| `min_tokens` | `int` | `0` | Minimum number of tokens to generate per output sequence before EOS or stop sequences. |
+| `skip_special_tokens` | `bool` | `true` | Whether to skip special tokens in the output. |
+| `spaces_between_special_tokens` | `bool` | `true` | Whether to add spaces between special tokens in the output. |
+| `truncate_prompt_tokens` | `int` | `None` | If set, truncate the prompt to this many tokens. |
+
+## Streaming responses
+
+Enable streaming to receive tokens as they're generated instead of waiting for the complete response.
+
+```python
+import requests
+import json
+
+# Replace ENDPOINT_ID and RUNPOD_API_KEY with your actual values
+url = "https://api.runpod.ai/v2/ENDPOINT_ID/run"
+headers = {
+    "Authorization": "Bearer RUNPOD_API_KEY",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "input": {
+        "prompt": "Write a short story about a robot.",
+        "sampling_params": {
+            "temperature": 0.8,
+            "max_tokens": 500
+        },
+        "stream": True
+    }
+}
+
+response = requests.post(url, headers=headers, json=data)
+job_id = response.json()["id"]
+
+# Stream the results
+stream_url = f"https://api.runpod.ai/v2/ENDPOINT_ID/stream/{job_id}"
+with requests.get(stream_url, headers=headers, stream=True) as r:
+    for line in r.iter_lines():
+        if line:
+            print(json.loads(line))
+```
+
+For more information on streaming, see the [stream operation documentation](/serverless/endpoints/send-requests#stream).
+
+## Error handling
+
+Implement proper error handling to manage network timeouts, rate limiting, worker initialization delays, and model loading errors.
+
+```python
+import requests
+import time
+
+def send_vllm_request(url, headers, payload, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=300)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.Timeout:
+            print(f"Request timed out. Attempt {attempt + 1}/{max_retries}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                print("Rate limit exceeded. Waiting before retry...")
+                time.sleep(5)
+            elif e.response.status_code >= 500:
+                print(f"Server error: {e.response.status_code}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+            else:
+                raise
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+    
+    raise Exception("Max retries exceeded")
+
+# Usage
+result = send_vllm_request(url, headers, data)
+```
+
+## Best practices
+
+Follow these best practices when sending requests to vLLM workers.
+
+**Set appropriate timeouts** based on your model size and expected generation length. Larger models and longer generations require longer timeouts.
+
+**Implement retry logic** with exponential backoff for failed requests. This handles temporary network issues and worker initialization delays.
+
+**Use streaming for long responses** to provide a better user experience. Users see output immediately instead of waiting for the entire response.
+
+**Optimize sampling parameters** for your use case. Lower temperature for factual tasks, higher temperature for creative tasks.
+
+**Monitor response times** to identify performance issues. If requests consistently take longer than expected, consider using a more powerful GPU or optimizing your parameters.
+
+**Handle rate limits** gracefully by implementing queuing or request throttling in your application.
+
+**Cache common requests** when appropriate to reduce redundant API calls and improve response times.
+
+## Next steps
+
+* [Learn about OpenAI API compatibility](/serverless/vllm/openai-compatibility).
+* [Explore environment variables for customization](/serverless/vllm/environment-variables).
+* [Review all Serverless endpoint operations](/serverless/endpoints/send-requests).

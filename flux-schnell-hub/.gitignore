@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+.env
+.venv/
+venv/
+.idea/
+.vscode/
+.pytest_cache/
+__snapshots__/
+.cache/
+*.log
+runpod.log
+outputs/

@@ -1,0 +1,11 @@
+{
+  "input": {
+    "prompt": "Concept art of a compact spacecraft parked on a cliff at sunrise",
+    "width": 512,
+    "height": 512,
+    "num_inference_steps": 4,
+    "guidance": 1.0,
+    "seed": 42,
+    "image_format": "png"
+  }
+}
