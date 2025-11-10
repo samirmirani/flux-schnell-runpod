@@ -14,7 +14,7 @@ Serverless worker that exposes [black-forest-labs/FLUX.1-schnell](https://huggin
 ## Project layout
 
 ```
-flux-schnell-hub/
+repo-root/
 ├── Dockerfile                 # CUDA 12.1 + PyTorch 2.4 runtime image
 ├── handler.py                 # Runpod handler entrypoint
 ├── src/flux_schnell_worker    # Generation logic + validation helpers
@@ -27,7 +27,7 @@ flux-schnell-hub/
     └── serverless/
 ```
 
-All of the documentation you provided (Hub and Serverless guides) now lives under `docs/` so everything needed for the Runpod repo is colocated.
+All of the documentation you provided (Hub and Serverless guides) now lives under `docs/` at the repository root, so everything needed for the Runpod repo is colocated.
 
 ## Inputs and outputs
 
@@ -74,7 +74,7 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
    ```
 3. Create a virtual environment and install the dependencies:
    ```bash
-   cd flux-schnell-hub
+   cd flux-schnell-runpod
    python -m venv .venv && source .venv/bin/activate
    pip install --upgrade pip -r builder/requirements.txt
    ```
@@ -89,7 +89,7 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
 ## Docker build
 
 ```bash
-cd flux-schnell-hub
+cd flux-schnell-runpod
 export HF_TOKEN="hf_xxx"   # required at runtime for the first download
 docker build --platform linux/amd64 -t your-docker-user/flux-schnell:latest .
 docker run --gpus all -e HF_TOKEN -it your-docker-user/flux-schnell:latest

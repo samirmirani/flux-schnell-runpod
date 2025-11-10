@@ -52,8 +52,13 @@ Thumbs.db
 
 # Runpod / Hugging Face caches
 /runpod-cache/
-flux-schnell-hub/.cache/
-flux-schnell-hub/.huggingface/
+.cache/
+.huggingface/
+
+# Worker artifacts
+runpod.log
+outputs/
+__snapshots__/
 
 # IDE / editor settings
 .vscode/
