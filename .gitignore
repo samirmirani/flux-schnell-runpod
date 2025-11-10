@@ -52,8 +52,8 @@ Thumbs.db
 
 # Runpod / Hugging Face caches
 /runpod-cache/
-.cache/
-.huggingface/
+**/.cache/
+**/.huggingface/
 
 # Worker artifacts
 runpod.log
