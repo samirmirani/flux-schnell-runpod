@@ -16,20 +16,19 @@ Serverless worker that exposes [black-forest-labs/FLUX.1-schnell](https://huggin
 
 ```
 repo-root/
-├── .runpod/
-│   ├── Dockerfile             # CUDA 12.1 + PyTorch 2.4 runtime image
-│   ├── rp_handler.py          # Runpod handler entrypoint
-│   ├── src/flux_schnell_worker# Generation logic + validation helpers
-│   ├── builder/requirements.txt
-│   ├── test_input.json        # Handy for `python rp_handler.py --test_input ...`
-│   ├── hub.json               # Hub metadata + environment schema
-│   └── tests.json             # Hub smoke test definition
+├── Dockerfile                 # CUDA 12.1 + PyTorch 2.4 runtime image
+├── rp_handler.py              # Runpod handler entrypoint
+├── src/flux_schnell_worker    # Generation logic + validation helpers
+├── builder/requirements.txt   # Python dependencies (Torch comes from the base image)
+├── test_input.json            # Handy for `python rp_handler.py --test_input ...`
+├── .runpod/hub.json           # Hub metadata + environment schema
+├── .runpod/tests.json         # Hub smoke test definition
 └── docs/                      # Reference docs (Hub + Serverless guides)
     ├── hub/
     └── serverless/
 ```
 
-All Hub-specific assets now live inside `.runpod/`, matching Runpod's preferred repository contract. Documentation remains under `docs/` at the root.
+All Hub-specific configuration lives inside `.runpod/`, while the worker code stays at the repo root (as required by the Runpod Hub contract). Documentation remains under `docs/`.
 
 ## Inputs and outputs
 
@@ -76,7 +75,7 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
    ```
 3. Create a virtual environment and install the dependencies:
    ```bash
-   cd flux-schnell-runpod/.runpod
+   cd flux-schnell-runpod
    python -m venv .venv && source .venv/bin/activate
    pip install --upgrade pip -r builder/requirements.txt
    ```
@@ -91,7 +90,7 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
 ## Docker build
 
 ```bash
-cd flux-schnell-runpod/.runpod
+cd flux-schnell-runpod
 export HF_TOKEN="hf_xxx"   # required at runtime for the first download
 docker build --platform linux/amd64 -t your-docker-user/flux-schnell:latest .
 docker run --gpus all -e HF_TOKEN -it your-docker-user/flux-schnell:latest
