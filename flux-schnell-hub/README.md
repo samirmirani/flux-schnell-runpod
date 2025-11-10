@@ -21,8 +21,13 @@ flux-schnell-hub/
 ├── builder/requirements.txt   # Python dependencies (Torch comes from the base image)
 ├── test_input.json            # Handy for `python handler.py --test_input ...`
 ├── .runpod/hub.json           # Hub metadata + environment schema
-└── .runpod/tests.json         # Hub smoke test definition
+├── .runpod/tests.json         # Hub smoke test definition
+└── docs/                      # Reference docs (Hub + Serverless guides)
+    ├── hub/
+    └── serverless/
 ```
+
+All of the documentation you provided (Hub and Serverless guides) now lives under `docs/` so everything needed for the Runpod repo is colocated.
 
 ## Inputs and outputs
 
