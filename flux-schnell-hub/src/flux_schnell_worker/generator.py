@@ -35,6 +35,7 @@ MAX_SEQUENCE_LENGTH = int(os.getenv("MAX_SEQUENCE_LENGTH", 512))
 
 SUPPORTED_FORMATS = {"jpeg": "image/jpeg", "jpg": "image/jpeg", "png": "image/png"}
 USE_MOCK_PIPELINE = os.getenv("USE_MOCK_PIPELINE") == "1"
+ENABLE_CPU_OFFLOAD = os.getenv("ENABLE_CPU_OFFLOAD") == "1"
 
 
 class FluxInputError(ValueError):
@@ -263,7 +264,11 @@ class FluxSchnellGenerator:
                 cache_dir=self._cache_dir,
                 use_safetensors=True,
             )
-            pipeline = pipeline.to(self._device)
+            if ENABLE_CPU_OFFLOAD:
+                LOGGER.info("ENABLE_CPU_OFFLOAD=1 detected. Enabling model CPU offload.")
+                pipeline.enable_model_cpu_offload()
+            else:
+                pipeline = pipeline.to(self._device)
             pipeline.set_progress_bar_config(disable=True)
             self._pipeline = pipeline
             LOGGER.info("Pipeline ready")

@@ -79,7 +79,7 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
    python handler.py --test_input test_input.json
    ```
    Use `python handler.py --test_input '{"input": {"prompt": "..."}}'` for ad-hoc prompts.
-5. Developing on CPU hardware? Set `USE_MOCK_PIPELINE=1` (and optionally `DEVICE=cpu`) before running the handler to skip the multi-gigabyte model download. The worker will emit placeholder images but exercises the same validation/response flow.
+5. Developing on CPU hardware? Set `USE_MOCK_PIPELINE=1` (and optionally `DEVICE=cpu`) before running the handler to skip the multi-gigabyte model download. The worker will emit placeholder images but exercises the same validation/response flow. If you need to run on a GPU with tight VRAM headroom, set `ENABLE_CPU_OFFLOAD=1` so Diffusers offloads layers back to system memory during inference.
 
 ## Docker build
 
@@ -111,6 +111,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 | `HUGGINGFACE_HUB_CACHE` | Where weights are stored inside the container (`/workspace/.cache/huggingface`). |
 | `DEVICE`, `TORCH_DTYPE` | Override compute target (e.g., `cpu`, `float32`) when running locally. |
 | `USE_MOCK_PIPELINE` | When set to `1`, skips HF downloads and returns placeholder images for fast local validation. |
+| `ENABLE_CPU_OFFLOAD` | When `1`, calls `pipeline.enable_model_cpu_offload()` to shrink VRAM needs (handy on busy GPUs). |
 
 ## Publishing checklist
 
