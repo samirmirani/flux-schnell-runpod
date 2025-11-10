@@ -18,7 +18,7 @@ RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY src ./src
-COPY handler.py ./handler.py
+COPY rp_handler.py ./rp_handler.py
 COPY test_input.json ./test_input.json
 
-CMD ["python", "-u", "handler.py"]
+CMD ["python", "-u", "rp_handler.py"]

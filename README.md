@@ -17,10 +17,10 @@ Serverless worker that exposes [black-forest-labs/FLUX.1-schnell](https://huggin
 ```
 repo-root/
 ├── Dockerfile                 # CUDA 12.1 + PyTorch 2.4 runtime image
-├── handler.py                 # Runpod handler entrypoint
+├── rp_handler.py              # Runpod handler entrypoint
 ├── src/flux_schnell_worker    # Generation logic + validation helpers
 ├── builder/requirements.txt   # Python dependencies (Torch comes from the base image)
-├── test_input.json            # Handy for `python handler.py --test_input ...`
+├── test_input.json            # Handy for `python rp_handler.py --test_input ...`
 ├── .runpod/hub.json           # Hub metadata + environment schema
 ├── .runpod/tests.json         # Hub smoke test definition
 └── docs/                      # Reference docs (Hub + Serverless guides)
@@ -82,9 +82,9 @@ The `cost` field mirrors the price table from the Public Endpoint reference usin
    (The base image supplies PyTorch, so you only need these packages for local CPU debugging.)
 4. Run the handler against the canned payload:
    ```bash
-   python handler.py --test_input test_input.json
+   python rp_handler.py --test_input test_input.json
    ```
-   Use `python handler.py --test_input '{"input": {"prompt": "..."}}'` for ad-hoc prompts.
+   Use `python rp_handler.py --test_input '{"input": {"prompt": "..."}}'` for ad-hoc prompts.
 5. Developing on CPU hardware? Set `USE_MOCK_PIPELINE=1` (and optionally `DEVICE=cpu`) before running the handler to skip the multi-gigabyte model download. The worker will emit placeholder images but exercises the same validation/response flow. If you need to run on a GPU with tight VRAM headroom, set `ENABLE_CPU_OFFLOAD=1` so Diffusers offloads layers back to system memory during inference.
 
 ## Docker build
@@ -100,7 +100,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 
 ## Hub configuration
 
-- `.runpod/hub.json` exposes the mandatory files (`handler.py`, `Dockerfile`, `README.md`) and surfaces environment variables so Hub users can supply their own `HF_TOKEN`, tweak defaults, or pick from the included presets (`Fast 768px`, `Quality 1024px`).
+- `.runpod/hub.json` exposes the mandatory files (`rp_handler.py`, `Dockerfile`, `README.md`) and surfaces environment variables so Hub users can supply their own `HF_TOKEN`, tweak defaults, or pick from the included presets (`Fast 768px`, `Quality 1024px`).
 - `.runpod/tests.json` defines a 512×512 smoke test that mirrors the Public Endpoint contract.
 - Remember to set `HF_TOKEN` (and any other overrides) inside the Hub UI before triggering a build so the gated weights can be downloaded.
 

@@ -1,6 +1,6 @@
-"""Hub-specific entrypoint that reuses the repository root handler."""
+"""Hub entrypoint ensuring Runpod detects the handler."""
 
-from handler import handler as handler  # re-export for Runpod detection
+from rp_handler import handler
 
 if __name__ == "__main__":
     import runpod
