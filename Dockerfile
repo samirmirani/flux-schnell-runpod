@@ -6,6 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HUGGINGFACE_HUB_CACHE=/workspace/.cache/huggingface \
     HF_HUB_ENABLE_HF_TRANSFER=1 \
+    DISABLE_SDP_FASTPATH=1 \
     PYTHONPATH=/workspace/src
 
 RUN apt-get update \

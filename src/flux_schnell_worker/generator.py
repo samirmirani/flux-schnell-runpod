@@ -36,6 +36,7 @@ MAX_SEQUENCE_LENGTH = int(os.getenv("MAX_SEQUENCE_LENGTH", 512))
 SUPPORTED_FORMATS = {"jpeg": "image/jpeg", "jpg": "image/jpeg", "png": "image/png"}
 USE_MOCK_PIPELINE = os.getenv("USE_MOCK_PIPELINE") == "1"
 ENABLE_CPU_OFFLOAD = os.getenv("ENABLE_CPU_OFFLOAD") == "1"
+DISABLE_SDP_FASTPATH = os.getenv("DISABLE_SDP_FASTPATH", "1") == "1"
 
 
 class FluxInputError(ValueError):
@@ -96,6 +97,7 @@ class FluxSchnellGenerator:
         self._cache_dir = os.getenv("HUGGINGFACE_HUB_CACHE")
         self._pipeline: Optional[FluxPipeline] = None
         self._pipeline_lock = threading.Lock()
+        self._configure_attention_backend()
 
     # ------------------------------------------------------------------
     # Public helpers
@@ -296,6 +298,17 @@ class FluxSchnellGenerator:
 
     def _random_seed(self) -> int:
         return secrets.randbelow(2**31)
+
+    def _configure_attention_backend(self) -> None:
+        if not (DISABLE_SDP_FASTPATH and torch.cuda.is_available()):
+            return
+        try:
+            torch.backends.cuda.enable_flash_sdp(False)
+            torch.backends.cuda.enable_mem_efficient_sdp(False)
+            torch.backends.cuda.enable_math_sdp(True)
+            LOGGER.info("DISABLE_SDP_FASTPATH=1 detected. Forcing math SDPA backend to avoid cuDNN planner issues.")
+        except Exception as exc:  # pragma: no cover - defensive logging
+            LOGGER.warning("Failed to adjust SDPA backend: %s", exc)
 
 
 class _MockFluxPipeline:
