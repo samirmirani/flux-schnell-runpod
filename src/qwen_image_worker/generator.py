@@ -46,6 +46,7 @@ LIGHTNING_LORA_REPO_ID = os.getenv("LIGHTNING_LORA_REPO_ID")
 LIGHTNING_LORA_FILENAME = os.getenv("LIGHTNING_LORA_FILENAME")
 LIGHTNING_DEFAULT_STEPS = int(os.getenv("LIGHTNING_DEFAULT_STEPS", 8))
 LIGHTNING_DEFAULT_GUIDANCE = float(os.getenv("LIGHTNING_DEFAULT_GUIDANCE", 1.0))
+TRANSFORMER_SINGLE_FILE_PATH = os.getenv("TRANSFORMER_SINGLE_FILE_PATH")
 
 
 class QwenInputError(ValueError):
@@ -108,6 +109,11 @@ class QwenImageGenerator:
         self._pipeline: Optional[DiffusionPipeline] = None
         self._pipeline_lock = threading.Lock()
         self._lightning_weights_path = self._resolve_lightning_lora_path()
+        self._transformer_single_file = (
+            Path(TRANSFORMER_SINGLE_FILE_PATH).expanduser()
+            if TRANSFORMER_SINGLE_FILE_PATH
+            else None
+        )
         self._configure_attention_backend()
 
     # ------------------------------------------------------------------
@@ -279,18 +285,15 @@ class QwenImageGenerator:
                 "use_safetensors": True,
             }
 
+            should_attach_transformer = bool(self._transformer_single_file or self._lightning_weights_path)
+            if should_attach_transformer:
+                transformer = self._load_transformer(hf_token)
+                pipeline_kwargs["transformer"] = transformer
+
             if self._lightning_weights_path:
                 LOGGER.info("Applying Lightning LoRA from %s", self._lightning_weights_path)
-                transformer = QwenImageTransformer2DModel.from_pretrained(
-                    self._model_id,
-                    subfolder="transformer",
-                    torch_dtype=self._torch_dtype,
-                    token=hf_token,
-                    cache_dir=self._cache_dir,
-                    use_safetensors=True,
-                )
                 scheduler = self._build_lightning_scheduler()
-                pipeline_kwargs.update({"transformer": transformer, "scheduler": scheduler})
+                pipeline_kwargs["scheduler"] = scheduler
 
             pipeline = DiffusionPipeline.from_pretrained(self._model_id, **pipeline_kwargs)
 
@@ -397,6 +400,35 @@ class QwenImageGenerator:
     @property
     def _default_height(self) -> int:
         return DEFAULT_HEIGHT
+
+    def _load_transformer(self, hf_token: Optional[str]) -> QwenImageTransformer2DModel:
+        common_kwargs: Dict[str, Any] = {
+            "torch_dtype": self._torch_dtype,
+            "token": hf_token,
+            "cache_dir": self._cache_dir,
+        }
+        if self._transformer_single_file:
+            config_kwargs = self._transformer_config_kwargs()
+            LOGGER.info("Loading transformer from single file at %s", self._transformer_single_file)
+            return QwenImageTransformer2DModel.from_single_file(
+                str(self._transformer_single_file),
+                **common_kwargs,
+                **config_kwargs,
+            )
+
+        LOGGER.info("Loading transformer weights from %s", self._model_id)
+        return QwenImageTransformer2DModel.from_pretrained(
+            self._model_id,
+            subfolder="transformer",
+            use_safetensors=True,
+            **common_kwargs,
+        )
+
+    def _transformer_config_kwargs(self) -> Dict[str, Any]:
+        model_path = Path(self._model_id)
+        if model_path.exists():
+            return {"config": str(model_path), "subfolder": "transformer"}
+        return {"config": self._model_id, "subfolder": "transformer"}
 
 
 class _MockQwenPipeline:

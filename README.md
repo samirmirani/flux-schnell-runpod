@@ -104,12 +104,14 @@ ModelTC provides LoRA “Lightning” heads that distill Qwen-Image down to 4/8 
    (Alternatively, set `LIGHTNING_LORA_REPO_ID=lightx2v/Qwen-Image-Lightning` and `LIGHTNING_LORA_FILENAME=Qwen-Image-Lightning-4steps-V2.0.safetensors` to let the worker auto-download it.)
 3. Point the worker at the LoRA and optionally tweak the defaults:
    ```bash
+   export TRANSFORMER_SINGLE_FILE_PATH=$HOME/Downloads/qwen_image_fp8_e4m3fn_scaled.safetensors
    export LIGHTNING_LORA_PATH=$PWD/.cache/Qwen-Image-Lightning/Qwen-Image-Lightning-4steps-V2.0.safetensors
    export LIGHTNING_DEFAULT_STEPS=4
    export LIGHTNING_DEFAULT_GUIDANCE=1.0
    python rp_handler.py --test_input test_input.json
    ```
    When `LIGHTNING_LORA_*` variables are present, the worker automatically swaps in the FlowMatch scheduler, loads the LoRA, and keeps the rest of the interface exactly the same. This path works well on smaller GPUs because it slashes the number of steps.
+   Set `TRANSFORMER_SINGLE_FILE_PATH` to the downloaded `qwen_image_fp8_e4m3fn_scaled.safetensors` so the worker loads the scaled FP8 base via `from_single_file` instead of the 20 GB bf16 transformer.
 
 ## Docker build
 
@@ -145,6 +147,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 | `LIGHTNING_LORA_PATH` | Absolute path to a Lightning LoRA file (ModelTC Qwen-Image-Lightning). |
 | `LIGHTNING_LORA_REPO_ID` + `LIGHTNING_LORA_FILENAME` | Alternative way to download the LoRA from Hugging Face on startup. |
 | `LIGHTNING_DEFAULT_STEPS`, `LIGHTNING_DEFAULT_GUIDANCE` | Override the defaults whenever a Lightning LoRA is active. |
+| `TRANSFORMER_SINGLE_FILE_PATH` | Optional path to a standalone transformer checkpoint (e.g., `qwen_image_fp8_e4m3fn_scaled.safetensors`) for local FP8/quantized testing. |
 
 ## Publishing checklist
 
