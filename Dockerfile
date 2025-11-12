@@ -14,7 +14,10 @@ RUN apt-get update \
     && mkdir -p /workspace/.cache/huggingface
 
 COPY builder/requirements.txt /tmp/requirements.txt
+ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --index-url ${PYTORCH_INDEX_URL} \
+        torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 \
     && pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY src ./src
