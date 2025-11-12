@@ -13,12 +13,12 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from flux_schnell_worker import FluxInputError, FluxSchnellGenerator
+from qwen_image_worker import QwenImageGenerator, QwenInputError
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
-GENERATOR = FluxSchnellGenerator()
+GENERATOR = QwenImageGenerator()
 
 
 def _extract_input(job: Dict[str, Any]) -> Dict[str, Any]:
@@ -26,7 +26,7 @@ def _extract_input(job: Dict[str, Any]) -> Dict[str, Any]:
     if job_input is None:
         return {}
     if not isinstance(job_input, dict):
-        raise FluxInputError("`input` must be a JSON object.")
+        raise QwenInputError("`input` must be a JSON object.")
     return job_input
 
 
@@ -42,7 +42,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                 "execution_ms": duration_ms,
             },
         }
-    except FluxInputError as error:
+    except QwenInputError as error:
         LOGGER.warning("User input error: %s", error)
         return {"error": str(error)}
     except Exception:  # pragma: no cover

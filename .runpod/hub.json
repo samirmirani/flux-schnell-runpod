@@ -1,6 +1,6 @@
 {
-  "title": "Flux Schnell Serverless Worker",
-  "description": "Serverless Runpod worker for black-forest-labs/FLUX.1-schnell with a drop-in Public Endpoint contract.",
+  "title": "Qwen Image Serverless Worker",
+  "description": "Serverless Runpod worker for Qwen/Qwen-Image with a drop-in Public Endpoint contract.",
   "type": "serverless",
   "category": "image",
   "config": {
@@ -21,8 +21,7 @@
         "input": {
           "name": "Hugging Face access token",
           "type": "string",
-          "description": "Personal access token with approval to download black-forest-labs/FLUX.1-schnell.",
-          "required": true
+          "description": "Recommended to avoid anonymous rate limits when downloading Qwen/Qwen-Image."
         }
       },
       {
@@ -30,8 +29,8 @@
         "input": {
           "name": "Model repository",
           "type": "string",
-          "description": "Hugging Face repo id to load (defaults to the official FLUX.1-schnell weights).",
-          "default": "black-forest-labs/FLUX.1-schnell"
+          "description": "Hugging Face repo id to load (defaults to the official Qwen/Qwen-Image weights).",
+          "default": "Qwen/Qwen-Image"
         }
       },
       {
@@ -39,7 +38,7 @@
         "input": {
           "name": "Default width",
           "type": "number",
-          "description": "Fallback width (must be divisible by 64).",
+          "description": "Fallback width (must be divisible by RESOLUTION_STEP).",
           "default": 1024
         }
       },
@@ -48,8 +47,18 @@
         "input": {
           "name": "Default height",
           "type": "number",
-          "description": "Fallback height (must be divisible by 64).",
+          "description": "Fallback height (must be divisible by RESOLUTION_STEP).",
           "default": 1024
+        }
+      },
+      {
+        "key": "RESOLUTION_STEP",
+        "input": {
+          "name": "Resolution step",
+          "type": "number",
+          "description": "All width/height inputs must be divisible by this value.",
+          "default": 16,
+          "advanced": true
         }
       },
       {
@@ -57,8 +66,8 @@
         "input": {
           "name": "Default inference steps",
           "type": "number",
-          "description": "Steps to use when the request omits num_inference_steps.",
-          "default": 4
+          "description": "Steps to use when the request omits num_inference_steps (30 is a good quality default).",
+          "default": 30
         }
       },
       {
@@ -66,8 +75,8 @@
         "input": {
           "name": "Default guidance",
           "type": "number",
-          "description": "Guidance scale fallback.",
-          "default": 1.0
+          "description": "Guidance scale fallback (feeds Qwen's true_cfg_scale).",
+          "default": 4.0
         }
       },
       {
@@ -89,7 +98,7 @@
           "name": "Reported price per megapixel",
           "type": "number",
           "description": "Used only for the cost field in the handler response.",
-          "default": 0.0024,
+          "default": 0.004,
           "advanced": true
         }
       },
@@ -98,8 +107,8 @@
         "input": {
           "name": "Maximum inference steps",
           "type": "number",
-          "description": "Upper bound for num_inference_steps (defaults to 8).",
-          "default": 8,
+          "description": "Upper bound for num_inference_steps (50 for the base model).",
+          "default": 50,
           "advanced": true
         }
       },
@@ -108,29 +117,78 @@
         "input": {
           "name": "Maximum resolution edge",
           "type": "number",
-          "description": "Clamp for width/height (defaults to 1536).",
-          "default": 1536,
+          "description": "Clamp for width/height (defaults to 1664).",
+          "default": 1664,
+          "advanced": true
+        }
+      },
+      {
+        "key": "LIGHTNING_LORA_PATH",
+        "input": {
+          "name": "Lightning LoRA path",
+          "type": "string",
+          "description": "Absolute path to a ModelTC Qwen-Image-Lightning .safetensors file (optional).",
+          "advanced": true
+        }
+      },
+      {
+        "key": "LIGHTNING_LORA_REPO_ID",
+        "input": {
+          "name": "Lightning LoRA repo id",
+          "type": "string",
+          "description": "Hugging Face repo to auto-download the Lightning LoRA. Requires LIGHTNING_LORA_FILENAME.",
+          "advanced": true
+        }
+      },
+      {
+        "key": "LIGHTNING_LORA_FILENAME",
+        "input": {
+          "name": "Lightning LoRA filename",
+          "type": "string",
+          "description": "File inside the repo specified in LIGHTNING_LORA_REPO_ID.",
+          "advanced": true
+        }
+      },
+      {
+        "key": "LIGHTNING_DEFAULT_STEPS",
+        "input": {
+          "name": "Lightning default steps",
+          "type": "number",
+          "description": "Default num_inference_steps when a Lightning LoRA is active.",
+          "default": 8,
+          "advanced": true
+        }
+      },
+      {
+        "key": "LIGHTNING_DEFAULT_GUIDANCE",
+        "input": {
+          "name": "Lightning default guidance",
+          "type": "number",
+          "description": "Default true_cfg_scale when a Lightning LoRA is active.",
+          "default": 1.0,
           "advanced": true
         }
       }
     ],
     "presets": [
       {
-        "name": "Fast 768px",
-        "defaults": {
-          "DEFAULT_WIDTH": 768,
-          "DEFAULT_HEIGHT": 768,
-          "DEFAULT_INFERENCE_STEPS": 4,
-          "DEFAULT_GUIDANCE": 1.0
-        }
-      },
-      {
-        "name": "Quality 1024px",
+        "name": "Quality 1K",
         "defaults": {
           "DEFAULT_WIDTH": 1024,
           "DEFAULT_HEIGHT": 1024,
-          "DEFAULT_INFERENCE_STEPS": 6,
-          "DEFAULT_GUIDANCE": 1.25
+          "DEFAULT_INFERENCE_STEPS": 28,
+          "DEFAULT_GUIDANCE": 4.0
+        }
+      },
+      {
+        "name": "Lightning 4-step",
+        "defaults": {
+          "DEFAULT_WIDTH": 1216,
+          "DEFAULT_HEIGHT": 832,
+          "DEFAULT_INFERENCE_STEPS": 4,
+          "DEFAULT_GUIDANCE": 1.0,
+          "LIGHTNING_DEFAULT_STEPS": 4,
+          "LIGHTNING_DEFAULT_GUIDANCE": 1.0
         }
       }
     ]

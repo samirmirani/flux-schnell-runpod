@@ -4,10 +4,10 @@
       "name": "smoke_512",
       "input": {
         "prompt": "Studio lighting photo of a small bonsai tree on a desk",
-        "width": 512,
-        "height": 512,
-        "num_inference_steps": 4,
-        "guidance": 1.0,
+        "width": 1024,
+        "height": 1024,
+        "num_inference_steps": 20,
+        "guidance": 4.0,
         "image_format": "png"
       },
       "timeout": 300000
