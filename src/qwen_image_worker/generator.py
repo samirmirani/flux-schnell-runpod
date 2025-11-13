@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import io
 import logging
-import math
 import os
 import secrets
 import threading
@@ -13,9 +12,8 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
 import torch
-from diffusers import DiffusionPipeline, FlowMatchEulerDiscreteScheduler
+from diffusers import DiffusionPipeline
 from diffusers.models import QwenImageTransformer2DModel
-from huggingface_hub import hf_hub_download
 from PIL import Image
 
 LOGGER = logging.getLogger(__name__)
@@ -40,12 +38,6 @@ SUPPORTED_FORMATS = {"jpeg": "image/jpeg", "jpg": "image/jpeg", "png": "image/pn
 USE_MOCK_PIPELINE = os.getenv("USE_MOCK_PIPELINE") == "1"
 ENABLE_CPU_OFFLOAD = os.getenv("ENABLE_CPU_OFFLOAD") == "1"
 DISABLE_SDP_FASTPATH = os.getenv("DISABLE_SDP_FASTPATH", "1") == "1"
-
-LIGHTNING_LORA_PATH = os.getenv("LIGHTNING_LORA_PATH")
-LIGHTNING_LORA_REPO_ID = os.getenv("LIGHTNING_LORA_REPO_ID")
-LIGHTNING_LORA_FILENAME = os.getenv("LIGHTNING_LORA_FILENAME")
-LIGHTNING_DEFAULT_STEPS = int(os.getenv("LIGHTNING_DEFAULT_STEPS", 8))
-LIGHTNING_DEFAULT_GUIDANCE = float(os.getenv("LIGHTNING_DEFAULT_GUIDANCE", 1.0))
 TRANSFORMER_SINGLE_FILE_PATH = os.getenv("TRANSFORMER_SINGLE_FILE_PATH")
 
 
@@ -108,7 +100,6 @@ class QwenImageGenerator:
         self._cache_dir = os.getenv("HUGGINGFACE_HUB_CACHE")
         self._pipeline: Optional[DiffusionPipeline] = None
         self._pipeline_lock = threading.Lock()
-        self._lightning_weights_path = self._resolve_lightning_lora_path()
         self._transformer_single_file = (
             Path(TRANSFORMER_SINGLE_FILE_PATH).expanduser()
             if TRANSFORMER_SINGLE_FILE_PATH
@@ -168,13 +159,13 @@ class QwenImageGenerator:
         if negative_prompt is not None and not isinstance(negative_prompt, str):
             raise QwenInputError("`negative_prompt` must be a string if provided.")
 
-        width = self._normalize_dimension(payload.get("width", self._default_width), "width")
-        height = self._normalize_dimension(payload.get("height", self._default_height), "height")
+        width = self._normalize_dimension(payload.get("width", DEFAULT_WIDTH), "width")
+        height = self._normalize_dimension(payload.get("height", DEFAULT_HEIGHT), "height")
 
-        steps_raw = payload.get("num_inference_steps", self._default_steps)
+        steps_raw = payload.get("num_inference_steps", DEFAULT_NUM_STEPS)
         steps = self._normalize_int(steps_raw, STEP_MIN, STEP_MAX, "num_inference_steps")
 
-        guidance_raw = payload.get("guidance", self._default_guidance)
+        guidance_raw = payload.get("guidance", DEFAULT_GUIDANCE)
         guidance = self._normalize_float(guidance_raw, GUIDANCE_MIN, GUIDANCE_MAX, "guidance")
 
         seed_raw = payload.get("seed")
@@ -285,20 +276,12 @@ class QwenImageGenerator:
                 "use_safetensors": True,
             }
 
-            should_attach_transformer = bool(self._transformer_single_file or self._lightning_weights_path)
+            should_attach_transformer = bool(self._transformer_single_file)
             if should_attach_transformer:
                 transformer = self._load_transformer(hf_token)
                 pipeline_kwargs["transformer"] = transformer
 
-            if self._lightning_weights_path:
-                LOGGER.info("Applying Lightning LoRA from %s", self._lightning_weights_path)
-                scheduler = self._build_lightning_scheduler()
-                pipeline_kwargs["scheduler"] = scheduler
-
             pipeline = DiffusionPipeline.from_pretrained(self._model_id, **pipeline_kwargs)
-
-            if self._lightning_weights_path:
-                pipeline.load_lora_weights(self._lightning_weights_path)
 
             if ENABLE_CPU_OFFLOAD:
                 LOGGER.info("ENABLE_CPU_OFFLOAD=1 detected. Enabling model CPU offload.")
@@ -344,62 +327,6 @@ class QwenImageGenerator:
             LOGGER.info("DISABLE_SDP_FASTPATH=1 detected. Using math SDPA backend.")
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Failed to adjust SDPA backend: %s", exc)
-
-    def _resolve_lightning_lora_path(self) -> Optional[Path]:
-        if LIGHTNING_LORA_PATH:
-            path = Path(LIGHTNING_LORA_PATH)
-            if not path.exists():
-                raise RuntimeError(f"LIGHTNING_LORA_PATH={path} does not exist.")
-            return path
-
-        if LIGHTNING_LORA_REPO_ID and LIGHTNING_LORA_FILENAME:
-            LOGGER.info(
-                "Downloading Lightning LoRA %s from %s", LIGHTNING_LORA_FILENAME, LIGHTNING_LORA_REPO_ID
-            )
-            local_path = hf_hub_download(
-                repo_id=LIGHTNING_LORA_REPO_ID,
-                filename=LIGHTNING_LORA_FILENAME,
-                token=self._hf_token,
-                cache_dir=self._cache_dir,
-            )
-            return Path(local_path)
-
-        return None
-
-    def _build_lightning_scheduler(self) -> FlowMatchEulerDiscreteScheduler:
-        scheduler_config = {
-            "base_image_seq_len": 256,
-            "base_shift": math.log(3),
-            "invert_sigmas": False,
-            "max_image_seq_len": 8192,
-            "max_shift": math.log(3),
-            "num_train_timesteps": 1000,
-            "shift": 1.0,
-            "shift_terminal": None,
-            "stochastic_sampling": False,
-            "time_shift_type": "exponential",
-            "use_beta_sigmas": False,
-            "use_dynamic_shifting": True,
-            "use_exponential_sigmas": False,
-            "use_karras_sigmas": False,
-        }
-        return FlowMatchEulerDiscreteScheduler.from_config(scheduler_config)
-
-    @property
-    def _default_steps(self) -> int:
-        return LIGHTNING_DEFAULT_STEPS if self._lightning_weights_path else DEFAULT_NUM_STEPS
-
-    @property
-    def _default_guidance(self) -> float:
-        return LIGHTNING_DEFAULT_GUIDANCE if self._lightning_weights_path else DEFAULT_GUIDANCE
-
-    @property
-    def _default_width(self) -> int:
-        return DEFAULT_WIDTH
-
-    @property
-    def _default_height(self) -> int:
-        return DEFAULT_HEIGHT
 
     def _load_transformer(self, hf_token: Optional[str]) -> QwenImageTransformer2DModel:
         common_kwargs: Dict[str, Any] = {

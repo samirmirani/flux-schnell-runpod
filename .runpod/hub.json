@@ -123,49 +123,11 @@
         }
       },
       {
-        "key": "LIGHTNING_LORA_PATH",
+        "key": "TRANSFORMER_SINGLE_FILE_PATH",
         "input": {
-          "name": "Lightning LoRA path",
+          "name": "Transformer single-file path",
           "type": "string",
-          "description": "Absolute path to a ModelTC Qwen-Image-Lightning .safetensors file (optional).",
-          "advanced": true
-        }
-      },
-      {
-        "key": "LIGHTNING_LORA_REPO_ID",
-        "input": {
-          "name": "Lightning LoRA repo id",
-          "type": "string",
-          "description": "Hugging Face repo to auto-download the Lightning LoRA. Requires LIGHTNING_LORA_FILENAME.",
-          "advanced": true
-        }
-      },
-      {
-        "key": "LIGHTNING_LORA_FILENAME",
-        "input": {
-          "name": "Lightning LoRA filename",
-          "type": "string",
-          "description": "File inside the repo specified in LIGHTNING_LORA_REPO_ID.",
-          "advanced": true
-        }
-      },
-      {
-        "key": "LIGHTNING_DEFAULT_STEPS",
-        "input": {
-          "name": "Lightning default steps",
-          "type": "number",
-          "description": "Default num_inference_steps when a Lightning LoRA is active.",
-          "default": 8,
-          "advanced": true
-        }
-      },
-      {
-        "key": "LIGHTNING_DEFAULT_GUIDANCE",
-        "input": {
-          "name": "Lightning default guidance",
-          "type": "number",
-          "description": "Default true_cfg_scale when a Lightning LoRA is active.",
-          "default": 1.0,
+          "description": "Optional path to a standalone Qwen transformer checkpoint (e.g., qwen_image_fp8_e4m3fn_scaled.safetensors).",
           "advanced": true
         }
       }
@@ -178,17 +140,6 @@
           "DEFAULT_HEIGHT": 1024,
           "DEFAULT_INFERENCE_STEPS": 28,
           "DEFAULT_GUIDANCE": 4.0
-        }
-      },
-      {
-        "name": "Lightning 4-step",
-        "defaults": {
-          "DEFAULT_WIDTH": 1216,
-          "DEFAULT_HEIGHT": 832,
-          "DEFAULT_INFERENCE_STEPS": 4,
-          "DEFAULT_GUIDANCE": 1.0,
-          "LIGHTNING_DEFAULT_STEPS": 4,
-          "LIGHTNING_DEFAULT_GUIDANCE": 1.0
         }
       }
     ]

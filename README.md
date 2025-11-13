@@ -9,7 +9,6 @@ Serverless worker that exposes [Qwen/Qwen-Image](https://huggingface.co/Qwen/Qwe
 
 - Mirrors the existing Runpod image schema (`prompt`, `width`, `height`, `num_inference_steps`, `guidance`, `seed`, `image_format`) so existing clients keep working.
 - Lazy-loads the `QwenImagePipeline` once per container and reuses it for subsequent jobs.
-- Optional “Lightning” path: set `LIGHTNING_LORA_PATH` (or `LIGHTNING_LORA_REPO_ID` / `LIGHTNING_LORA_FILENAME`) to apply the ModelTC Qwen-Image-Lightning LoRA for fast, quantized-friendly local testing.
 - Returns base64-encoded images plus metadata (seed, resolution, reported cost, guidance, steps) and exposes every knob via environment variables surfaced in `.runpod/hub.json`.
 
 ## Project layout
@@ -38,7 +37,7 @@ All Hub-specific configuration lives inside `.runpod/`, while the worker code st
 | `negative_prompt` | string | | – | Optional negative guidance. |
 | `width` | integer | | `DEFAULT_WIDTH` (1024) | 512–1664, divisible by `RESOLUTION_STEP` (default 16). |
 | `height` | integer | | `DEFAULT_HEIGHT` (1024) | 512–1664, divisible by `RESOLUTION_STEP` (default 16). |
-| `num_inference_steps` | integer | | `DEFAULT_INFERENCE_STEPS` (30) | 1–50 for the base model (Lightning defaults to 8). |
+| `num_inference_steps` | integer | | `DEFAULT_INFERENCE_STEPS` (30) | 1–50 recommended for Qwen Image. |
 | `guidance` | float | | `DEFAULT_GUIDANCE` (4.0) | Passed to Qwen’s `true_cfg_scale`. |
 | `seed` | integer | | random | Use -1 or omit for random seeds. |
 | `image_format` | string | | `DEFAULT_IMAGE_FORMAT` (`jpeg`) | `jpeg` or `png`. |
@@ -88,30 +87,16 @@ The `cost` field mirrors Runpod’s Public Endpoint calculator using `PRICE_PER_
    Use `python rp_handler.py --test_input '{"input": {"prompt": "..."}}'` for ad-hoc prompts.
 5. Developing on CPU hardware? Set `USE_MOCK_PIPELINE=1` (and optionally `DEVICE=cpu`) before running the handler to skip the multi-gigabyte model download. The worker will emit placeholder images but exercises the same validation/response flow. If you need to run on a GPU with tight VRAM headroom, set `ENABLE_CPU_OFFLOAD=1` so Diffusers offloads layers back to system memory during inference.
 
-### Lightning (quantized/distilled) local testing
+### FP8 single-file local testing
 
-ModelTC provides LoRA “Lightning” heads that distill Qwen-Image down to 4/8 steps and support FP8/quantized transformers. To run them locally:
+If you have a single-file transformer checkpoint such as `qwen_image_fp8_e4m3fn_scaled.safetensors`, you can point the worker at it to avoid downloading the full 20 GB bf16 transformer:
 
-1. Clone the helper repo (only needed once):
-   ```bash
-   git clone https://github.com/ModelTC/Qwen-Image-Lightning .cache/Qwen-Image-Lightning
-   ```
-2. Download the LoRA checkpoint you want to test, e.g. the 4-step V2 weights:
-   ```bash
-   curl -L -o .cache/Qwen-Image-Lightning/Qwen-Image-Lightning-4steps-V2.0.safetensors \
-     https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V2.0.safetensors
-   ```
-   (Alternatively, set `LIGHTNING_LORA_REPO_ID=lightx2v/Qwen-Image-Lightning` and `LIGHTNING_LORA_FILENAME=Qwen-Image-Lightning-4steps-V2.0.safetensors` to let the worker auto-download it.)
-3. Point the worker at the LoRA and optionally tweak the defaults:
-   ```bash
-   export TRANSFORMER_SINGLE_FILE_PATH=$HOME/Downloads/qwen_image_fp8_e4m3fn_scaled.safetensors
-   export LIGHTNING_LORA_PATH=$PWD/.cache/Qwen-Image-Lightning/Qwen-Image-Lightning-4steps-V2.0.safetensors
-   export LIGHTNING_DEFAULT_STEPS=4
-   export LIGHTNING_DEFAULT_GUIDANCE=1.0
-   python rp_handler.py --test_input test_input.json
-   ```
-   When `LIGHTNING_LORA_*` variables are present, the worker automatically swaps in the FlowMatch scheduler, loads the LoRA, and keeps the rest of the interface exactly the same. This path works well on smaller GPUs because it slashes the number of steps.
-   Set `TRANSFORMER_SINGLE_FILE_PATH` to the downloaded `qwen_image_fp8_e4m3fn_scaled.safetensors` so the worker loads the scaled FP8 base via `from_single_file` instead of the 20 GB bf16 transformer.
+```bash
+export TRANSFORMER_SINGLE_FILE_PATH=$HOME/Downloads/qwen_image_fp8_e4m3fn_scaled.safetensors
+python rp_handler.py --test_input test_input.json
+```
+
+The rest of the pipeline (VAE, text encoder, scheduler) continues to load from `Qwen/Qwen-Image`, but the transformer weights now come from that FP8 file. Combine this with smaller `DEFAULT_WIDTH/HEIGHT` values if you’re testing on tight VRAM.
 
 ## Docker build
 
@@ -126,7 +111,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 
 ## Hub configuration
 
-- `.runpod/hub.json` exposes the mandatory files (`rp_handler.py`, `Dockerfile`, `README.md`) and surfaces environment variables so Hub users can supply their own `HF_TOKEN`, tweak defaults, or pick from the included presets (`Quality 1K`, `Lightning 4-step`).
+- `.runpod/hub.json` exposes the mandatory files (`rp_handler.py`, `Dockerfile`, `README.md`) and surfaces environment variables so Hub users can supply their own `HF_TOKEN`, tweak defaults, or pick from the included presets (for example, `Quality 1K`).
 - `.runpod/tests.json` defines a 1024×1024 smoke test that mirrors the contract used in the README.
 - Remember to set `HF_TOKEN` (and any other overrides) inside the Hub UI before triggering a build so the initial download succeeds.
 
@@ -144,9 +129,6 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 | `DEVICE`, `TORCH_DTYPE` | Override compute target (e.g., `cpu`, `float32`) when running locally. |
 | `USE_MOCK_PIPELINE` | When set to `1`, skips HF downloads and returns placeholder images for fast local validation. |
 | `ENABLE_CPU_OFFLOAD` | When `1`, calls `pipeline.enable_model_cpu_offload()` to shrink VRAM needs. |
-| `LIGHTNING_LORA_PATH` | Absolute path to a Lightning LoRA file (ModelTC Qwen-Image-Lightning). |
-| `LIGHTNING_LORA_REPO_ID` + `LIGHTNING_LORA_FILENAME` | Alternative way to download the LoRA from Hugging Face on startup. |
-| `LIGHTNING_DEFAULT_STEPS`, `LIGHTNING_DEFAULT_GUIDANCE` | Override the defaults whenever a Lightning LoRA is active. |
 | `TRANSFORMER_SINGLE_FILE_PATH` | Optional path to a standalone transformer checkpoint (e.g., `qwen_image_fp8_e4m3fn_scaled.safetensors`) for local FP8/quantized testing. |
 
 ## Publishing checklist
