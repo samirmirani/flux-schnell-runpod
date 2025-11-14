@@ -123,6 +123,20 @@
         }
       },
       {
+        "key": "USE_MOCK_PIPELINE",
+        "input": {
+          "name": "Use mock pipeline (testing only)",
+          "type": "string",
+          "description": "When set to 1, skips HF downloads and returns placeholder images for quick smoke tests.",
+          "options": [
+            { "label": "Disabled", "value": "0" },
+            { "label": "Enabled", "value": "1" }
+          ],
+          "default": "0",
+          "advanced": true
+        }
+      },
+      {
         "key": "TRANSFORMER_SINGLE_FILE_PATH",
         "input": {
           "name": "Transformer single-file path",

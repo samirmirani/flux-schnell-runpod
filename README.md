@@ -113,6 +113,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 
 - `.runpod/hub.json` exposes the mandatory files (`rp_handler.py`, `Dockerfile`, `README.md`) and surfaces environment variables so Hub users can supply their own `HF_TOKEN`, tweak defaults, or pick from the included presets (for example, `Quality 1K`).
 - `.runpod/tests.json` defines a 1024×1024 smoke test that mirrors the contract used in the README.
+- The Hub smoke test injects `USE_MOCK_PIPELINE=1` so the container can finish quickly without downloading the full ~20 GB Qwen weights during the automated release gate. Real deployments leave this unset (or `0`) so the actual model runs.
 - Remember to set `HF_TOKEN` (and any other overrides) inside the Hub UI before triggering a build so the initial download succeeds.
 
 ## Environment variables
