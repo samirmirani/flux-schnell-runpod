@@ -130,6 +130,7 @@ The first run pulls the model weights into `/workspace/.cache/huggingface`. Subs
 | `DEVICE`, `TORCH_DTYPE` | Override compute target (e.g., `cpu`, `float32`) when running locally. |
 | `USE_MOCK_PIPELINE` | When set to `1`, skips HF downloads and returns placeholder images for fast local validation. |
 | `ENABLE_CPU_OFFLOAD` | When `1`, calls `pipeline.enable_model_cpu_offload()` to shrink VRAM needs. |
+| `DISABLE_SDP_FASTPATH` | Default `0`. Set to `1` only if you need to fall back to PyTorch’s math SDPA kernels (older GPUs). |
 | `TRANSFORMER_SINGLE_FILE_PATH` | Optional path to a standalone transformer checkpoint (e.g., `qwen_image_fp8_e4m3fn_scaled.safetensors`) for local FP8/quantized testing. |
 
 ## Publishing checklist

@@ -37,7 +37,7 @@ PRICE_PER_MEGAPIXEL = float(os.getenv("PRICE_PER_MEGAPIXEL", 0.004))
 SUPPORTED_FORMATS = {"jpeg": "image/jpeg", "jpg": "image/jpeg", "png": "image/png"}
 USE_MOCK_PIPELINE = os.getenv("USE_MOCK_PIPELINE") == "1"
 ENABLE_CPU_OFFLOAD = os.getenv("ENABLE_CPU_OFFLOAD") == "1"
-DISABLE_SDP_FASTPATH = os.getenv("DISABLE_SDP_FASTPATH", "1") == "1"
+DISABLE_SDP_FASTPATH = os.getenv("DISABLE_SDP_FASTPATH", "0") == "1"
 TRANSFORMER_SINGLE_FILE_PATH = os.getenv("TRANSFORMER_SINGLE_FILE_PATH")
 
 
